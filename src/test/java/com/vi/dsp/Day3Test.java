@@ -15,4 +15,8 @@ public class Day3Test {
         d.readValidChars(is);
 
     }
+    @Test
+    public void anotherTest() throws IOException {
+        d.test02();
+    }
 }
