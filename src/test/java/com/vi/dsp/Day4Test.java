@@ -26,4 +26,17 @@ public class Day4Test {
         day4.findXmas(arrayLines);
 
     }
+
+    @Test
+    public void test2() throws IOException {
+        URL day4Url = Day4Test.class.getClassLoader().getResource("Day4Input.txt");
+        BufferedReader br = new BufferedReader(new FileReader(day4Url.getFile()));
+        List<String[]> arrayLines = new ArrayList<>();
+        while (br.ready()) {
+            String line = br.readLine();
+            String[] arr = line.split("");
+            arrayLines.add(arr);
+        }
+        day4.findCrossMas(arrayLines);
+    }
 }

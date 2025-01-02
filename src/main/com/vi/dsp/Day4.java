@@ -1,9 +1,21 @@
 package com.vi.dsp;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class Day4 {
+    public void findCrossMas(List<String[]> inputData){
+
+        int hitCount = 0;
+        ROW: for(int i = 0; i < inputData.size(); i++) {
+            COLUMN:
+            for (int j = 0; j < inputData.get(i).length; j++) {
+                if(inputData.get(i)[j].equals("A")){
+                    if(checkCrossedMas(i, j, inputData)) hitCount++;
+                }
+            }
+        }
+        System.out.println(hitCount);
+    }
     public void findXmas(List<String[]> inputData){
         int hitCount = 0;
         ROW: for(int i = 0; i < inputData.size(); i++){
@@ -23,9 +35,51 @@ public class Day4 {
         System.out.println(hitCount);
     }
 
-    boolean isLetterX(String s){
-        return (s.contains("X"));
+    boolean checkCrossedMas(int rowPosition, int colPosition, List<String[]> inputData){
+        StringBuilder sb1 = new StringBuilder();
+        StringBuilder sb2 = new StringBuilder();
+        if(colPosition < 1 || colPosition > inputData.getFirst().length-2 || rowPosition < 1 || rowPosition > inputData.size()-2) return false;
+        sb1.append(inputData.get(rowPosition-1)[colPosition-1]);
+        sb1.append(inputData.get(rowPosition+1)[colPosition+1]);
+        sb2.append(inputData.get(rowPosition-1)[colPosition+1]);
+        sb2.append(inputData.get(rowPosition+1)[colPosition-1]);
+
+        String result1 = sb1.toString();
+        String result2 = sb2.toString();
+        boolean result1Response = result1.contains("MS") || result1.contains("SM");
+        boolean result2Response = result2.contains("MS") || result2.contains("SM");
+        return (result1Response && result2Response);
     }
+
+    boolean checkSouthWestForMas(int rowPosition, int colPosition, List<String[]> inputData){
+        StringBuilder sb = new StringBuilder();
+        if(rowPosition > inputData.size()-3 || colPosition < 2) return false;
+        for(int i =0;  i< 3; i++){
+            sb.append(inputData.get(rowPosition+i)[colPosition-i]);
+        }
+        String result = sb.toString();
+        return (result.contains("MAS") || result.contains("SAM"));
+    }
+
+    boolean checkNorthEastForMas(int rowPosition, int colPosition, List<String[]> inputData){
+        StringBuilder sb = new StringBuilder();
+        if(rowPosition < 2 || colPosition > inputData.getFirst().length-3) return false;
+        for(int i =0;  i< 3; i++){
+            sb.append(inputData.get(rowPosition-i)[colPosition+i]);
+        }
+        String result = sb.toString();
+        return (result.contains("MAS") || result.contains("SAM"));
+    }
+    boolean checkNorthWestForMas(int rowPosition, int colPosition, List<String[]> inputData){
+        StringBuilder sb = new StringBuilder();
+        if(rowPosition < 2 || colPosition < 2) return false;
+        for(int i =0;  i< 3; i++){
+            sb.append(inputData.get(rowPosition-i)[colPosition-i]);
+        }
+        String result = sb.toString();
+        return (result.contains("MAS") || result.contains("SAM"));
+    }
+
     boolean checkNorth(int rowPosition, int colPosition, List<String[]> inputData){
         StringBuilder sb = new StringBuilder();
         if(rowPosition < 3) return false;
