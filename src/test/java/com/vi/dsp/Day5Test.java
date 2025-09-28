@@ -37,7 +37,12 @@ public class Day5Test {
             testData.add(nums);
         }
 
-        day5.pageOrderFinder(refData, testData);
+        //day5.pageOrderFinder(refData, testData);
+        Day5Again day5Again = new Day5Again();
+        
+        day5Again.deduce(day5Again, refData, testData);
 
     }
+
+
 }
