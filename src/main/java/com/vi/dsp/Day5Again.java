@@ -1,10 +1,12 @@
 package com.vi.dsp;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -13,7 +15,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class Day5Again {
 
-    private Map<Integer, List<Integer>> orderPageCorrectly(List<int[]> refData, List<List<Integer>> testData){
+    private Map<Integer, List<Integer>> getValueAheadOfKeyMap(List<int[]> refData){
             return refData.stream()
                 .collect(Collectors.toMap(
                     entry -> entry[0], 
@@ -23,44 +25,93 @@ public class Day5Again {
                         return existingList;
                     }
                 ));
-                
     }
 
-    private List<Integer> orderNumber(Map<Integer, List<Integer>> refDataMap) {
-        log.info("for key: {}, values are {}");
-        Map<Integer, Integer> sizeOfObjects = refDataMap.entrySet().stream().collect(Collectors.toMap(
-        entry -> entry.getKey(),
-        entry -> entry.getValue().size()
-        ));
-        List<Map.Entry<Integer, Integer>> entryList = new ArrayList<>(sizeOfObjects.entrySet());
-        entryList.sort(Map.Entry.<Integer, Integer>comparingByValue().reversed());
-        List<Integer> elementSequence = new ArrayList<>(entryList.stream().map(entry -> entry.getKey()).toList());
-        int lastElement = refDataMap.get(elementSequence.getLast()).get(0);
-        elementSequence.addLast(lastElement);
-        return elementSequence;
+    Map<Integer, List<Integer>> getValuesBehindKeyMap(List<int[]> refData) {
+        return refData.stream()
+        .collect(Collectors.toMap(
+            item -> item[1],
+            item -> new ArrayList<>(List.of(item[0])),
+            (existingList, newList) -> {
+                existingList.addAll(newList);
+                return existingList;
+            }
+            ));
     }
 
-    boolean reOrederSequenceInTestDataRow(List<Integer> testRow, List<Integer> validSequence){
-        Map<Integer, Integer> result = new LinkedHashMap();
-        for(int i = 0; i< testRow.size(); i++){
-            result.put(testRow.get(i), validSequence.indexOf(testRow.get(i)));
+    List<List<Integer>> validateTestDataElementHasRightSequenceAhead(Map<Integer, List<Integer>> valuesAfterKeyMap, List<List<Integer>> testData) {
+        List<List<Integer>> result = new ArrayList<>();
+        for (List<Integer> testRow : testData) {
+            for (Integer testElement : testRow) {
+                List<Integer> subListToBeChecked = testRow.subList(testRow.indexOf(testElement) + 1, testRow.size());
+                List<Integer> referenceListForGivenElement = valuesAfterKeyMap.get(testElement);
+                boolean allSubListElementAreInRefList = referenceListForGivenElement.containsAll(subListToBeChecked);
+                if (!allSubListElementAreInRefList) {
+                    break;
+                }
+                if (testRow.indexOf(testElement) == testRow.size() - 1) result.add(testRow);
+            }
         }
-        List<Integer> rowValuePrioList = result.values().stream().toList();
-        
-        return IntStream.range(1, rowValuePrioList.size())
-                        .allMatch(i -> rowValuePrioList.get(i) >= rowValuePrioList.get(i - 1));
+        return result;
     }
+
+    List<List<Integer>> sequenceAheadWithAlteration(Map<Integer, List<Integer>> valuesAfterKeyMap, List<List<Integer>> testData) {
+        List<List<Integer>> result = new ArrayList<>();
+        List<List<Integer>> testDataSet = new ArrayList<>(testData);
+        boolean isRowValidatedCompletely = false;
+        for(int i=0; i< testDataSet.size(); i++) {
+            List<Integer> testRow = new ArrayList<>(testDataSet.get(i));
+            for (int j=0; j< testRow.size(); j++) {
+                Integer testElement = testRow.get(j);
+                List<Integer> subListToBeChecked = testRow.subList(testRow.indexOf(testElement) + 1, testRow.size());
+                List<Integer> referenceListForGivenElement = valuesAfterKeyMap.get(testElement);
+                Optional<Integer> misplacedElement =
+                        subListToBeChecked.stream().filter(element -> !referenceListForGivenElement.contains(element)).findFirst();
+                if(misplacedElement.isPresent()) {
+                    int indexOfCurrentElement = testRow.indexOf(testElement);
+                    testRow.remove(misplacedElement.get());
+                    testRow.add(indexOfCurrentElement, misplacedElement.get());
+                    testDataSet.set(i, testRow);
+                    i--;
+                    break;
+                }
+                else{
+                    if(testRow.size() == j+1){
+                        isRowValidatedCompletely = true;
+                    }
+                }
+            }
+            if(isRowValidatedCompletely){
+                result.add(testRow);
+                var checkRes = validateTestDataElementHasRightSequenceAhead(valuesAfterKeyMap, List.of(testRow));
+                isRowValidatedCompletely = false;
+            }
+        }
+        return result;
+    }
+
+    void getMiddleNumberAndAdd(List<List<Integer>> validatedTestResult){
+        AtomicInteger outcome = new AtomicInteger();
+        validatedTestResult.stream().
+                forEach(row -> {
+                    int middleIndex = row.size()/2;
+                    outcome.addAndGet(row.get(middleIndex));
+                });
+        log.info("Final outcome is {}", outcome.get());
+    }
+
+
 
     
 
     public void deduce(Day5Again day5Again, List<int[]> refData, List<List<Integer>> testData) {
-        Map<Integer, List<Integer>> mappedReferenceData = day5Again.orderPageCorrectly(refData, testData);
-        List<Integer> elementSequence = day5Again.orderNumber(mappedReferenceData);
-        testData.forEach(row -> reOrederSequenceInTestDataRow(row, elementSequence));
-        // List<List<Integer>> validResults = testData.stream().filter(row -> reOrederSequenceInTestDataRow(row, elementSequence)).toList();
-        // List<List<Integer>> inValidResults = testData.stream().filter(row -> !reOrederSequenceInTestDataRow(row, elementSequence)).toList();
-        //log.info("Valid List {}", validResults);
-        //log.info("InValid List {}", inValidResults);
+        Map<Integer, List<Integer>> valuesAfterKeyMap = day5Again.getValueAheadOfKeyMap(refData);
+        Map<Integer, List<Integer>> valuesBehindKeyMap = day5Again.getValuesBehindKeyMap(refData);
+        List<List<Integer>> validatedTestDataAhead = day5Again.validateTestDataElementHasRightSequenceAhead(valuesAfterKeyMap, testData);
+        getMiddleNumberAndAdd(validatedTestDataAhead);
+        testData.removeAll(validatedTestDataAhead);
+        List<List<Integer>> rightlySortedForIncorrectList = sequenceAheadWithAlteration(valuesAfterKeyMap,testData);
+        getMiddleNumberAndAdd(rightlySortedForIncorrectList);
     }
 
 }
